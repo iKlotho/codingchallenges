@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"os"
@@ -11,18 +12,32 @@ type WCOutput interface {
 }
 
 type WCFile struct {
-	Name string
-	data []byte
+	Name   string
+	reader *bufio.Reader
 }
 
 func (wcf *WCFile) loadFile() error {
-	f, err := os.ReadFile(wcf.Name)
-	wcf.data = f
+	fd, err := os.Open(wcf.Name)
+	reader := bufio.NewReader(fd)
+	wcf.reader = reader
 	return err
 }
 
 func (wcf *WCFile) Size() int {
-	return len(wcf.data)
+	return wcf.reader.Size()
+}
+
+func (wcf *WCFile) LineCount() int {
+	// TODO: optimize?
+	lc := 0
+	for {
+		_, err := wcf.reader.ReadBytes('\n')
+		if err != nil {
+			break
+		}
+		lc++
+	}
+	return lc
 }
 
 func NewFile(name string) (*WCFile, error) {
@@ -41,6 +56,7 @@ func main() {
 	}
 
 	byteFlagPtr := flag.Bool("c", false, "Print number of bytes in each input file")
+	lineFlagPtr := flag.Bool("l", false, "Print number of line in each input file")
 	flag.Parse()
 
 	allFiles := flag.Args()
@@ -57,6 +73,9 @@ func main() {
 		out := "  "
 		if *byteFlagPtr {
 			out += fmt.Sprintf("%d ", file.Size())
+		}
+		if *lineFlagPtr {
+			out += fmt.Sprintf("%d ", file.LineCount())
 		}
 		out += file.Name
 		fmt.Println(out)
