@@ -7,10 +7,6 @@ import (
 	"os"
 )
 
-type WCOutput interface {
-	PrintResult()
-}
-
 type WCFile struct {
 	Name   string
 	reader *bufio.Reader
