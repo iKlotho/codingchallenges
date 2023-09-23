@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 )
 
@@ -52,6 +53,24 @@ func (wcf *WCFile) WordCount() int {
 	return wordCount
 }
 
+func (wcf *WCFile) CharCount() int {
+	wcf.fd.Seek(0, 0)
+	charCount := 0
+	reader := bufio.NewReader(wcf.fd)
+	for {
+		_, _, err := reader.ReadRune()
+		if err != nil {
+			if err == io.EOF {
+				break
+			} else {
+				panic(err)
+			}
+		}
+		charCount += 1
+	}
+	return charCount
+}
+
 func NewFile(name string) (*WCFile, error) {
 	wcf := &WCFile{Name: name}
 	err := wcf.loadFile()
@@ -70,6 +89,7 @@ func main() {
 	byteFlagPtr := flag.Bool("c", false, "Print number of bytes in each input file")
 	lineFlagPtr := flag.Bool("l", false, "Print number of lines in each input file")
 	wordFlagPtr := flag.Bool("w", false, "Print number of words in each input file")
+	charFlagPtr := flag.Bool("m", false, "Print number of characters in each input file")
 	flag.Parse()
 
 	allFiles := flag.Args()
@@ -90,8 +110,12 @@ func main() {
 		if *wordFlagPtr {
 			out += fmt.Sprintf("%d ", file.WordCount())
 		}
-		if *byteFlagPtr {
-			out += fmt.Sprintf("%d ", file.Size())
+		if *byteFlagPtr || *charFlagPtr {
+			if *byteFlagPtr {
+				out += fmt.Sprintf("%d ", file.Size())
+			} else {
+				out += fmt.Sprintf("%d ", file.CharCount())
+			}
 		}
 		out += file.Name
 		fmt.Println(out)
