@@ -85,10 +85,15 @@ func main() {
 		fmt.Printf("Please provide a filename\n")
 		os.Exit(1)
 	}
+	defaultValue := false
+	// no options provided
+	if len(os.Args) < 3 {
+		defaultValue = true
+	}
 
-	byteFlagPtr := flag.Bool("c", false, "Print number of bytes in each input file")
-	lineFlagPtr := flag.Bool("l", false, "Print number of lines in each input file")
-	wordFlagPtr := flag.Bool("w", false, "Print number of words in each input file")
+	byteFlagPtr := flag.Bool("c", defaultValue, "Print number of bytes in each input file")
+	lineFlagPtr := flag.Bool("l", defaultValue, "Print number of lines in each input file")
+	wordFlagPtr := flag.Bool("w", defaultValue, "Print number of words in each input file")
 	charFlagPtr := flag.Bool("m", false, "Print number of characters in each input file")
 	flag.Parse()
 
