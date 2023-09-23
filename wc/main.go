@@ -19,8 +19,12 @@ func (wcf *WCFile) loadFile() error {
 	return err
 }
 
-func (wcf *WCFile) Size() int {
-	return wcf.reader.Size()
+func (wcf *WCFile) Size() int64 {
+	fileInfo, err := os.Stat(wcf.Name)
+	if err != nil {
+		panic(err)
+	}
+	return fileInfo.Size()
 }
 
 func (wcf *WCFile) LineCount() int {
