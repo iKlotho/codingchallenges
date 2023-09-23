@@ -8,14 +8,13 @@ import (
 )
 
 type WCFile struct {
-	Name   string
-	reader *bufio.Reader
+	Name string
+	fd   *os.File
 }
 
 func (wcf *WCFile) loadFile() error {
 	fd, err := os.Open(wcf.Name)
-	reader := bufio.NewReader(fd)
-	wcf.reader = reader
+	wcf.fd = fd
 	return err
 }
 
@@ -29,15 +28,28 @@ func (wcf *WCFile) Size() int64 {
 
 func (wcf *WCFile) LineCount() int {
 	// TODO: optimize?
+	wcf.fd.Seek(0, 0)
 	lc := 0
+	reader := bufio.NewReader(wcf.fd)
 	for {
-		_, err := wcf.reader.ReadBytes('\n')
+		_, err := reader.ReadBytes('\n')
 		if err != nil {
 			break
 		}
 		lc++
 	}
 	return lc
+}
+
+func (wcf *WCFile) WordCount() int {
+	wcf.fd.Seek(0, 0)
+	wordCount := 0
+	scanner := bufio.NewScanner(wcf.fd)
+	scanner.Split(bufio.ScanWords)
+	for scanner.Scan() {
+		wordCount++
+	}
+	return wordCount
 }
 
 func NewFile(name string) (*WCFile, error) {
@@ -56,7 +68,8 @@ func main() {
 	}
 
 	byteFlagPtr := flag.Bool("c", false, "Print number of bytes in each input file")
-	lineFlagPtr := flag.Bool("l", false, "Print number of line in each input file")
+	lineFlagPtr := flag.Bool("l", false, "Print number of lines in each input file")
+	wordFlagPtr := flag.Bool("w", false, "Print number of words in each input file")
 	flag.Parse()
 
 	allFiles := flag.Args()
@@ -71,11 +84,14 @@ func main() {
 
 	for _, file := range files {
 		out := "  "
-		if *byteFlagPtr {
-			out += fmt.Sprintf("%d ", file.Size())
-		}
 		if *lineFlagPtr {
 			out += fmt.Sprintf("%d ", file.LineCount())
+		}
+		if *wordFlagPtr {
+			out += fmt.Sprintf("%d ", file.WordCount())
+		}
+		if *byteFlagPtr {
+			out += fmt.Sprintf("%d ", file.Size())
 		}
 		out += file.Name
 		fmt.Println(out)
