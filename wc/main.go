@@ -6,85 +6,56 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"unicode"
 )
 
+type WCResult struct {
+	lineCount int64
+	wordCount int64
+	runeCount int64
+	charCount int64
+}
+
 type WCFile struct {
-	Name string
-	fd   *os.File
+	fd *os.File
 }
 
-func (wcf *WCFile) loadFile() error {
-	fd, err := os.Open(wcf.Name)
-	wcf.fd = fd
-	return err
-}
-
-func (wcf *WCFile) Size() int64 {
-	fileInfo, err := os.Stat(wcf.Name)
-	if err != nil {
-		panic(err)
-	}
-	return fileInfo.Size()
-}
-
-func (wcf *WCFile) LineCount() int {
-	// TODO: optimize?
-	wcf.fd.Seek(0, 0)
-	lc := 0
+func (wcf *WCFile) Calculate() *WCResult {
+	wcResult := &WCResult{}
 	reader := bufio.NewReader(wcf.fd)
+	var prevRune rune
 	for {
-		_, err := reader.ReadBytes('\n')
-		if err != nil {
-			break
-		}
-		lc++
-	}
-	return lc
-}
-
-func (wcf *WCFile) WordCount() int {
-	wcf.fd.Seek(0, 0)
-	wordCount := 0
-	scanner := bufio.NewScanner(wcf.fd)
-	scanner.Split(bufio.ScanWords)
-	for scanner.Scan() {
-		wordCount++
-	}
-	return wordCount
-}
-
-func (wcf *WCFile) CharCount() int {
-	wcf.fd.Seek(0, 0)
-	charCount := 0
-	reader := bufio.NewReader(wcf.fd)
-	for {
-		_, _, err := reader.ReadRune()
+		r, size, err := reader.ReadRune()
 		if err != nil {
 			if err == io.EOF {
+				if !unicode.IsSpace(prevRune) {
+					wcResult.wordCount++
+				}
 				break
 			} else {
 				panic(err)
 			}
+		} else {
+			if r == '\n' {
+				wcResult.lineCount++
+			}
+			if unicode.IsSpace(r) && !unicode.IsSpace(prevRune) {
+				wcResult.wordCount++
+			}
+			prevRune = r
+			wcResult.runeCount += int64(size)
+			wcResult.charCount++
 		}
-		charCount += 1
 	}
-	return charCount
+	return wcResult
 }
 
-func NewFile(name string) (*WCFile, error) {
-	wcf := &WCFile{Name: name}
-	err := wcf.loadFile()
-	if err != nil {
-		return nil, err
-	}
-	return wcf, err
+func NewFile(file *os.File) *WCFile {
+	wcf := &WCFile{fd: file}
+	return wcf
 }
 
 func main() {
-	if len(os.Args) == 1 {
-		fmt.Printf("Please provide a filename\n")
-		os.Exit(1)
-	}
 	defaultValue := false
 	// no options provided
 	if len(os.Args) < 3 {
@@ -99,30 +70,43 @@ func main() {
 
 	allFiles := flag.Args()
 	files := make([]*WCFile, 0)
-	for _, file := range allFiles {
-		wcf, err := NewFile(file)
-		if err != nil {
-			panic(err)
-		}
+
+	if len(allFiles) == 0 {
+		wcf := NewFile(os.Stdin)
 		files = append(files, wcf)
+	} else {
+		for _, filename := range allFiles {
+			fd, err := os.Open(filename)
+			if err != nil {
+				panic(err)
+			}
+			wcf := NewFile(fd)
+			files = append(files, wcf)
+		}
 	}
 
 	for _, file := range files {
+		wcResult := file.Calculate()
 		out := "  "
 		if *lineFlagPtr {
-			out += fmt.Sprintf("%d ", file.LineCount())
+			out += fmt.Sprintf("%d ", wcResult.lineCount)
 		}
 		if *wordFlagPtr {
-			out += fmt.Sprintf("%d ", file.WordCount())
+			out += fmt.Sprintf("%d ", wcResult.wordCount)
 		}
+		// TODO: implement -m
 		if *byteFlagPtr || *charFlagPtr {
-			if *byteFlagPtr {
-				out += fmt.Sprintf("%d ", file.Size())
+			if *charFlagPtr {
+				out += fmt.Sprintf("%d ", wcResult.charCount)
 			} else {
-				out += fmt.Sprintf("%d ", file.CharCount())
+				out += fmt.Sprintf("%d ", wcResult.runeCount)
+
 			}
 		}
-		out += file.Name
+		filename := file.fd.Name()
+		if filename != "/dev/stdin" {
+			out += filename
+		}
 		fmt.Println(out)
 	}
 }
