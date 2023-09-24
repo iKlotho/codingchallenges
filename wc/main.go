@@ -55,33 +55,39 @@ func NewFile(file *os.File) *WCFile {
 	return wcf
 }
 
-func main() {
-	defaultValue := false
-	// no options provided
-	if len(os.Args) < 3 {
-		defaultValue = true
-	}
+func isPipe() bool {
+	fi, _ := os.Stdin.Stat()
+	return (fi.Mode() & os.ModeCharDevice) == 0
+}
 
-	byteFlagPtr := flag.Bool("c", defaultValue, "Print number of bytes in each input file")
-	lineFlagPtr := flag.Bool("l", defaultValue, "Print number of lines in each input file")
-	wordFlagPtr := flag.Bool("w", defaultValue, "Print number of words in each input file")
+func main() {
+
+	byteFlagPtr := flag.Bool("c", false, "Print number of bytes in each input file")
+	lineFlagPtr := flag.Bool("l", false, "Print number of lines in each input file")
+	wordFlagPtr := flag.Bool("w", false, "Print number of words in each input file")
 	charFlagPtr := flag.Bool("m", false, "Print number of characters in each input file")
 	flag.Parse()
+
+	// TODO: find a better way
+	// If no option provided
+	if !*byteFlagPtr && !*lineFlagPtr && !*wordFlagPtr && !*charFlagPtr {
+		*byteFlagPtr = true
+		*lineFlagPtr = true
+		*wordFlagPtr = true
+	}
 
 	allFiles := flag.Args()
 	files := make([]*WCFile, 0)
 
-	if len(allFiles) == 0 {
-		wcf := NewFile(os.Stdin)
-		files = append(files, wcf)
+	if isPipe() {
+		files = append(files, NewFile(os.Stdin))
 	} else {
 		for _, filename := range allFiles {
 			fd, err := os.Open(filename)
 			if err != nil {
 				panic(err)
 			}
-			wcf := NewFile(fd)
-			files = append(files, wcf)
+			files = append(files, NewFile(fd))
 		}
 	}
 
@@ -94,7 +100,6 @@ func main() {
 		if *wordFlagPtr {
 			out += fmt.Sprintf("%d ", wcResult.wordCount)
 		}
-		// TODO: implement -m
 		if *byteFlagPtr || *charFlagPtr {
 			if *charFlagPtr {
 				out += fmt.Sprintf("%d ", wcResult.charCount)
