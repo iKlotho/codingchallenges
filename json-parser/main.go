@@ -125,11 +125,6 @@ func (l *Lexer) IsAlpha(r rune) bool {
 
 func main() {
 	filename := os.Args[1]
-	/*
-		RULES
-			BEGIN_QUOTE
-				> SYMBOL | END_QUOTE
-	*/
 
 	lexer := NewLexer(filename)
 	if lexer.content_len == 0 {
