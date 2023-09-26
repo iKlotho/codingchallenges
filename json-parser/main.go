@@ -17,9 +17,8 @@ const (
 )
 
 type Token struct {
-	text     []byte
-	text_len int
-	kind     string
+	text []byte
+	kind string
 }
 
 type Lexer struct {
@@ -55,49 +54,42 @@ func (l *Lexer) Next() *Token {
 	if l.content[l.cursor] == BEGIN_OBJECT {
 		l.cursor += 1
 		token.kind = "BEGIN_OBJECT"
-		token.text_len = 1
 		return token
 	}
 
 	if l.content[l.cursor] == END_OBJECT {
 		l.cursor += 1
 		token.kind = "END_OBJECT"
-		token.text_len = 1
 		return token
 	}
 
 	if l.content[l.cursor] == QUOTATION_MARK {
 		l.cursor += 1
 		token.kind = "QUOTATION_MARK"
-		token.text_len = 1
 		return token
 	}
 
 	if l.content[l.cursor] == NAME_SEPERATOR {
 		l.cursor += 1
 		token.kind = "NAME_SEPERATOR"
-		token.text_len = 1
 		return token
 	}
 
 	if l.content[l.cursor] == VALUE_SEPERATOR {
 		l.cursor += 1
 		token.kind = "VALUE_SEPERATOR"
-		token.text_len = 1
 		return token
 	}
 
 	if l.content[l.cursor] == BEGIN_ARRAY {
 		l.cursor += 1
 		token.kind = "BEGIN_ARRAY"
-		token.text_len = 1
 		return token
 	}
 
 	if l.content[l.cursor] == END_ARRAY {
 		l.cursor += 1
 		token.kind = "END_ARRAY"
-		token.text_len = 1
 		return token
 	}
 
@@ -117,7 +109,6 @@ func (l *Lexer) Next() *Token {
 
 	l.cursor += 1
 	token.kind = "INVALID_TOKEN"
-	token.text_len = 1
 
 	return token
 }
