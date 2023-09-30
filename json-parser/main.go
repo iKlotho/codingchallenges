@@ -16,6 +16,16 @@ const (
 	QUOTATION_MARK  = '"'
 )
 
+var LITERAL_TOKENS = map[rune]string{
+	BEGIN_ARRAY:     "BEGIN_ARRAY",
+	BEGIN_OBJECT:    "BEGIN_OBJECT",
+	END_ARRAY:       "END_ARRAY",
+	END_OBJECT:      "END_OBJECT",
+	NAME_SEPERATOR:  "NAME_SEPERATOR",
+	VALUE_SEPERATOR: "VALUE_SEPERATOR",
+	QUOTATION_MARK:  "QUOTATION_MARK",
+}
+
 type Token struct {
 	text []byte
 	kind string
@@ -48,48 +58,13 @@ func (l *Lexer) Next() *Token {
 		kind: "SYMBOL",
 	}
 	if l.cursor >= l.content_len {
+		l.cursor += 1
 		return token
 	}
 
-	if l.content[l.cursor] == BEGIN_OBJECT {
+	if token_kind, ok := LITERAL_TOKENS[rune(l.content[l.cursor])]; ok {
 		l.cursor += 1
-		token.kind = "BEGIN_OBJECT"
-		return token
-	}
-
-	if l.content[l.cursor] == END_OBJECT {
-		l.cursor += 1
-		token.kind = "END_OBJECT"
-		return token
-	}
-
-	if l.content[l.cursor] == QUOTATION_MARK {
-		l.cursor += 1
-		token.kind = "QUOTATION_MARK"
-		return token
-	}
-
-	if l.content[l.cursor] == NAME_SEPERATOR {
-		l.cursor += 1
-		token.kind = "NAME_SEPERATOR"
-		return token
-	}
-
-	if l.content[l.cursor] == VALUE_SEPERATOR {
-		l.cursor += 1
-		token.kind = "VALUE_SEPERATOR"
-		return token
-	}
-
-	if l.content[l.cursor] == BEGIN_ARRAY {
-		l.cursor += 1
-		token.kind = "BEGIN_ARRAY"
-		return token
-	}
-
-	if l.content[l.cursor] == END_ARRAY {
-		l.cursor += 1
-		token.kind = "END_ARRAY"
+		token.kind = token_kind
 		return token
 	}
 
@@ -134,6 +109,7 @@ func main() {
 	fmt.Println("parsing", lexer.content)
 	for {
 		token := lexer.Next()
+		fmt.Println("Token", token.kind, "value", string(token.text))
 		if lexer.cursor == 1 && token.kind != "BEGIN_OBJECT" {
 			fmt.Println("Invalid json!")
 			os.Exit(1)
@@ -142,7 +118,6 @@ func main() {
 			break
 		}
 
-		fmt.Println("Token", token.kind, "value", string(token.text))
 	}
 	fmt.Println("Hello lexer", filename)
 }
